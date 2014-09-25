@@ -1,0 +1,4 @@
+McGill
+======
+
+Classwork and projects
