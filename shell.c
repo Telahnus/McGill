@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_LINE 80 // chars per line, per command, should be enough
 
@@ -64,7 +65,7 @@ void setup(char inputBuffer[], char *args[], int *background){
 
 //method determines number of args
 int arrsize(char *args[]){
-  int i,at;
+  int i,at; // at is # of agruments
   at=0;
   for (i=0; i<MAX_LINE+1; i++){
     if (args[i]==NULL)break;
@@ -74,18 +75,73 @@ int arrsize(char *args[]){
 }
 
 
+void execute(char **argv, int *background){
+  
+  int status = *background;
+  pid_t pid;
+
+  if ((pid=fork())<0) { 		//forks a child process
+    printf("forking error\n");
+    exit(1);
+  }
+  else if (pid == 0) { 			//start of child process
+    printf("child process started\n");
+    if (execvp(*argv, argv)<0){ 	//executes the command
+      printf("execution error\n");
+      exit(1);
+    } 
+    else {
+      printf("child exited normally\n");
+      exit(0);
+    }
+  }
+  else { 				//start of parent process
+    printf("parent process started\n");
+    if ((pid = wait(&status))==-1)
+      printf("wait error\n");
+    else {
+      if (WIFSIGNALED(status) != 0)
+	printf("child process ended because of signal %d\n", WTERMSIG(status));
+      else if (WIFEXITED(status)!=0)
+	printf("child process ended normally; status = %d\n", WEXITSTATUS(status));
+      else
+	printf("Child process did not end normally\n");
+    }
+    //printf("parent process ended\n");
+    //exit(0);
+  }
+}
+
+
+
 int main (void)
 {
-  char inputBuffer[MAX_LINE]; // buffer to hold the command entered
-  int background;             // equals 1 if a command is followed by '&'
-  char *args[MAX_LINE + 1];   // command line (of 80) has max of 40 arguments
+  char inputBuffer[MAX_LINE];	// buffer to hold the command entered
+  int background;            	// equals 1 if a command is followed by '&'
+  char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
+  pid_t pid; 			// child id
+  char history[10][MAX_LINE];	// history buffer
+  int ht;			// history ticker
+  ht = 0;
 
   while (1){
     background = 0;
     printf("COMMAND->\n");
-    setup(inputBuffer,args, &background); // get next command
+    setup(inputBuffer, args, &background); // get next command
     
     /* my code goes here */
-    //printf("%i\n",arrsize(args));
+    while (args[ht]!=NULL){
+      printf("%s ", args[ht]);
+      ht++;
+    }
+    printf("\n");
+    ht=0;
+    //history[ht % 10][0] = strdup(args[0]);
+    //ht++;
+    //printf("%d: %s\n",ht-1,history[ht-1%10][0]);
+    //execute(args,&background);
+
+
+
   }
 }
