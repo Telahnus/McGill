@@ -18,6 +18,7 @@ void setup(char inputBuffer[], char *args[], int *background){
 
   // read what the user enters on the command line
   length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
+  
   inputBuffer[length]='\0';
   start = -1;
 
@@ -63,57 +64,22 @@ void setup(char inputBuffer[], char *args[], int *background){
   args[ct]=NULL; // just in case the input line was > 80
 }
 
+
+
+
 /*
-
-//method determines number of args
-int arrsize(char *args[]){
-  int i,at; // at is # of agruments
-  at=0;
-  for (i=0; i<MAX_LINE+1; i++){
-    if (args[i]==NULL)break;
-    else at++;
-  }
-  return at;
+void CP(void){
+  int i;
+  for (i=1; i<10; i++) printf("This line is from child, value = %d\n", i);
+  printf("CP is done\n");
+  exit(0);
 }
 
-
-void execute(char **argv, int *background){
-  
-  int status = *background;
-  pid_t pid;
-
-  if ((pid=fork())<0) { 		//forks a child process
-    printf("forking error\n");
-    exit(1);
-  }
-  else if (pid == 0) { 			//start of child process
-    printf("child process started\n");
-    if (execvp(*argv, argv)<0){ 	//executes the command
-      printf("execution error\n");
-      exit(1);
-    } 
-    else {
-      printf("child exited normally\n");
-      exit(0);
-    }
-  }
-  else { 				//start of parent process
-    printf("parent process started\n");
-    if ((pid = wait(&status))==-1)
-      printf("wait error\n");
-    else {
-      if (WIFSIGNALED(status) != 0)
-	printf("child process ended because of signal %d\n", WTERMSIG(status));
-      else if (WIFEXITED(status)!=0)
-	printf("child process ended normally; status = %d\n", WEXITSTATUS(status));
-      else
-	printf("Child process did not end normally\n");
-    }
-    //printf("parent process ended\n");
-    //exit(0);
-  }
+void PP(void){
+  int i;
+  for (i=1; i<10; i++) printf("This line is from parent, value = %d\n", i);
+  printf("PP is done\n");
 }
-
 */
 
 int main (void)
@@ -122,10 +88,7 @@ int main (void)
   int background;            	// equals 1 if a command is followed by '&'
   char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
   pid_t pid; 			// child id
-  char *history[10][MAX_LINE];	// history buffer
-  int ht;			// history ticker
-  int at;			// args ticker
-  ht = at = 0;
+
 
   while (1){
     background = 0;
@@ -134,51 +97,26 @@ int main (void)
     
     /* my code goes here */
 
+    pid=fork();			//forks a child process
 
-
-    /* history function */
-
-    // copy args array to history array
-    
-    at=0;
-    while (args[at]!=NULL){
-      history[ht%10][at] = strdup(args[at]);
-      printf("%s ", args[at]);
-      at++;
+    if (pid<0) { 			//check forking
+      printf("forking error\n");	
+      exit(1);
     }
-    
-    printf("\n");
-    at=0;
-   
-    printf("%d: ", ht);
-    while (history[ht%10][at]!=NULL){
-      printf("%s ", history[ht%10][at]);
-      at++;
+    else if (pid == 0) { 		//start of child process
+      printf("child process started: %d\n", getpid());
+      if (execvp(*args, args)<0){ 	//check execution
+        printf("execution error\n");	
+        exit(1);
+      }				
     }
-
-    printf("\n");
-    ht++;
-
-
-/*
-//ht++;
-
-    // print the history
-    at=0;
-    //printf("%d: %s", ht, history[ht%10][0]);
-    //printf("%d: %s", ht-1,history[(ht-1)%10][0]);
-    printf("%d: ", ht);
-    while (history[ht%10][at]!=NULL&&history[ht%10][at]!="\0"){
-      printf("%s ", history[ht%10][at]);
-      at++;
+    else {				//start of parent process
+      if (background == 0){
+        waitpid(pid);
+        printf("waiting for child to finish\n");
+      }			
+      printf("parent process continuing\n");
     }
-    printf("\n");
-
-*/
-
-    //execute(args,&background);
-
-
 
   }
 }
