@@ -18,6 +18,7 @@ void setup(char inputBuffer[], char *args[], int *background){
 
   // read what the user enters on the command line
   length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
+  inputBuffer[length]='\0';
   start = -1;
 
   if (length == 0) { // ctrl-d was entered, quit the shell normally
@@ -62,6 +63,7 @@ void setup(char inputBuffer[], char *args[], int *background){
   args[ct]=NULL; // just in case the input line was > 80
 }
 
+/*
 
 //method determines number of args
 int arrsize(char *args[]){
@@ -112,7 +114,7 @@ void execute(char **argv, int *background){
   }
 }
 
-
+*/
 
 int main (void)
 {
@@ -120,9 +122,10 @@ int main (void)
   int background;            	// equals 1 if a command is followed by '&'
   char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
   pid_t pid; 			// child id
-  char history[10][MAX_LINE];	// history buffer
+  char *history[10][MAX_LINE];	// history buffer
   int ht;			// history ticker
-  ht = 0;
+  int at;			// args ticker
+  ht = at = 0;
 
   while (1){
     background = 0;
@@ -130,15 +133,49 @@ int main (void)
     setup(inputBuffer, args, &background); // get next command
     
     /* my code goes here */
-    while (args[ht]!=NULL){
-      printf("%s ", args[ht]);
-      ht++;
+
+
+
+    /* history function */
+
+    // copy args array to history array
+    
+    at=0;
+    while (args[at]!=NULL){
+      history[ht%10][at] = strdup(args[at]);
+      printf("%s ", args[at]);
+      at++;
+    }
+    
+    printf("\n");
+    at=0;
+   
+    printf("%d: ", ht);
+    while (history[ht%10][at]!=NULL){
+      printf("%s ", history[ht%10][at]);
+      at++;
+    }
+
+    printf("\n");
+    ht++;
+
+
+/*
+//ht++;
+
+    // print the history
+    at=0;
+    //printf("%d: %s", ht, history[ht%10][0]);
+    //printf("%d: %s", ht-1,history[(ht-1)%10][0]);
+    printf("%d: ", ht);
+    while (history[ht%10][at]!=NULL&&history[ht%10][at]!="\0"){
+      printf("%s ", history[ht%10][at]);
+      at++;
     }
     printf("\n");
-    ht=0;
-    //history[ht % 10][0] = strdup(args[0]);
-    //ht++;
-    //printf("%d: %s\n",ht-1,history[ht-1%10][0]);
+
+*/
+
     //execute(args,&background);
 
 
