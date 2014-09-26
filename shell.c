@@ -88,35 +88,86 @@ int main (void)
   int background;            	// equals 1 if a command is followed by '&'
   char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
   pid_t pid; 			// child id
+  char *hist[10][MAX_LINE];	// history buffer
+  int i, j;			// loop iterators
+  int skip;			// used to track a shell command run by parent and skip child
 
+  i=j=skip=0;
 
   while (1){
-    background = 0;
+    background = skip = 0;
     printf("COMMAND->\n");
     setup(inputBuffer, args, &background); // get next command
     
     /* my code goes here */
 
-    pid=fork();			//forks a child process
-
-    if (pid<0) { 			//check forking
-      printf("forking error\n");	
-      exit(1);
+    if (strcmp(inputBuffer,"cd")==0){	//change directory is handled in shell
+      skip=1;
+      printf ("changing directory to %s\n", args[1]);  
+      if (chdir (args[1]) == -1) {  
+        printf("chdir failed!\n"); 
+      } else {  
+        printf ("chdir successful\n");    
+      }  
     }
-    else if (pid == 0) { 		//start of child process
-      printf("child process started: %d\n", getpid());
-      if (execvp(*args, args)<0){ 	//check execution
-        printf("execution error\n");	
+    
+    if (strcmp(inputBuffer,"exit")==0){
+      printf("exiting shell\n");
+      exit(0); 
+    }
+
+
+
+
+//history function
+/************************************
+    i=0;
+    free(hist[j%10][*]);
+    while (args[i]!=NULL){
+      hist[j%10][i]=strdup(args[i]);	//save args to hist
+      i++;
+    }
+    hist[j][i]=NULL;
+    
+    printf("%d: ", j);
+
+    i=0;
+    while(hist[j%10][i]!=NULL){
+      printf("%s ", hist[j%10][i]);	//print hist 
+      i++;
+    }
+
+    j++;
+    printf("\n");
+  
+*********************************************/
+
+//forking process
+/***********************************
+*/
+    if (skip==0){
+      pid=fork();				//forks a child process
+
+      if (pid<0) { 				//check forking
+        printf("forking error\n");	
         exit(1);
-      }				
+      }
+      else if (pid == 0) { 			//start of child process
+        printf("child pid = %d\n", getpid());
+        printf("parent pid = %d\n", getppid());
+        if (execvp(*args, args)<0){ 		//check execution
+          printf("execution error\n");	
+          exit(1);
+        }				
+      }
+      else {					//start of parent process
+        if (background == 0){
+          waitpid(pid);
+          printf("waiting for child to finish\n");
+        }			
+        printf("parent process continuing\n");
+      }
     }
-    else {				//start of parent process
-      if (background == 0){
-        waitpid(pid);
-        printf("waiting for child to finish\n");
-      }			
-      printf("parent process continuing\n");
-    }
-
+/****************************/
   }
 }
