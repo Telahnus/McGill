@@ -3,9 +3,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Jordan Quan, 260565221, Sept 26, 2014 */
+/* Comp 310, Assignment 1 */
+
 #define MAX_LINE 80 // chars per line, per command, should be enough
 
-// setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. setup() sets the args parameter as a null-terminated string.
+char hist[10][MAX_LINE];
+int histCount = 0;
+pid_t children[50];
+int childCount = 0;
+
+// setup() reads in the next command line, separating it into distinct tokens 
+// using whitespace as delimiters. setup() sets the args parameter as a null-terminated string.
 
 void setup(char inputBuffer[], char *args[], int *background){
 
@@ -19,6 +28,10 @@ void setup(char inputBuffer[], char *args[], int *background){
   // read what the user enters on the command line
   length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
   
+  //add input to history
+  strcpy(hist[histCount%10],inputBuffer);
+  histCount++;
+
   inputBuffer[length]='\0';
   start = -1;
 
@@ -65,45 +78,71 @@ void setup(char inputBuffer[], char *args[], int *background){
 }
 
 
+/**************************************************/
 
-
-/*
-void CP(void){
-  int i;
-  for (i=1; i<10; i++) printf("This line is from child, value = %d\n", i);
-  printf("CP is done\n");
-  exit(0);
+void addChild(pid_t pid){
+  int i = 0;
+  while(children[i]!=-1){
+    i++;
+  }
+  children[i]=pid;
 }
 
-void PP(void){
-  int i;
-  for (i=1; i<10; i++) printf("This line is from parent, value = %d\n", i);
-  printf("PP is done\n");
+void checkJobs (){
+  int i=0;
+  for (i=0;i<50;i++){
+    if (kill(children[i],0)){
+      children[i]=-1;
+    }
+  }
 }
-*/
+
+/**************************************************/
+/**************************************************/
+
 
 int main (void)
 {
-  char inputBuffer[MAX_LINE];	// buffer to hold the command entered
-  int background;            	// equals 1 if a command is followed by '&'
-  char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
-  pid_t pid; 			// child id
-  char *hist[10][MAX_LINE];	// history buffer
-  int i, j, k, l;		// loop iterators
-  int skip;			// used to track a shell command run by parent and skip child
-  char* cwd;			// will hold pwd
-  char buff[80];		// buffer for pwd
-  //int children[10];		// holds pid of children
-  
-  i=j=k=l=skip=0;
+  char inputBuffer[MAX_LINE];	        // buffer to hold the command entered
+  int background;            	        // equals 1 if a command is followed by '&'
+  char *args[MAX_LINE/2 + 1]; 	      // command line (of 80) has max of 40 arguments
+  pid_t pid; 		                      // pid and childpid
+  int i, j, k;  		                  // loop iterators
+  int skip;			                      // used to track a shell command run by parent and skip child
+  char* cwd;			                    // will hold pwd
+  char buff[80];		                  // buffer for pwd
+  int execStatus;		                  // check if child execvp worked
+  i=j=k=execStatus=skip=0;            // initialize some vars
+
+  for (i=0; i<50; i++){
+    children[i]=-1;
+  }
 
   while (1){
-    background = skip = 0;
+    background = 0;
+    skip = 0;
     printf("COMMAND->\n");
     setup(inputBuffer, args, &background); 		// get next command
-    
+
+
 // built in commands
 /**************************************************/
+
+//built in redo command
+    //NOT WORKING
+    /*
+    if (strcmp(inputBuffer,"r")==0){
+      histCount=histCount-2;
+      j=0;
+      printf("%d: ",histCount);
+      while( hist[histCount%10][j] != '\n' && hist[histCount%10][j] != '\0'){
+        printf("%c",hist[histCount%10][j]);
+        j++;
+      }
+      printf("\n");
+      strcpy(inputBuffer,hist[histCount%10]);   // set last command as inputBuffer
+      //setup(inputBuffer, args, &background);        // redo setup using last command
+    }*/
 
 // built in change directory
     if (strcmp(inputBuffer,"cd")==0){
@@ -131,90 +170,76 @@ int main (void)
       exit(0); 
     }
 
-
-// fg and jobs
-/**************************************************/
-/*    
-    if (strcmp(inputBuffer,"jobs")==0){
-      printf("listing background processes\n");
-      for (i=0;i<10;i++){
-        
+//built in history command
+    if (strcmp(inputBuffer,"history")==0){
+      skip=1;
+      j=k=0;
+      for (i=1;i<10;i++){
+        j=histCount-i;          // j counts 10 down from histCount
+        if(j>=0){
+          printf("%d: ",j);
+          while( hist[j%10][k] != '\n' && hist[j%10][k] != '\0'){
+            printf("%c",hist[j%10][k]);
+            k++;
+          }
+          printf("\n");
+          k=0;
+        }
       } 
+    }
+/*
+//built in jobs command
+    if (strcmp(inputBuffer,"jobs")==0){
+      char str[50]="ps -o pid --ppid ";
+      char ppid[7];
+      sprintf(ppid,"%d",getpid());
+      strcat(str,ppid);
+      system(str);
     }
 */
-
-// history function
-/**************************************************/
-    
-    if (strcmp(inputBuffer,"history")==0){		//history command is input
-      printf("listing last 10 commands\n");
-      for (k=1;k<10;k++){
-	l=j-k;
-	if (l>=0){
-	  printf("%d: ", l);
-	  i=0;
-	  while(hist[l%10][i]!=NULL){
-            printf("%s ", hist[l%10][i]);		//print hist 
-            i++;
-          }
-	  printf("\n");
-	}
-      } 
+// alt built in jobs command
+    if (strcmp(inputBuffer,"jobs")==0){
+      for (i=0;i<50;i++){
+        if (children[i]!=-1){
+          printf("Child # %d\n",children[i]);
+        }
+      }
     }
-
-    for (i=0; i<20; i++){				//clear out row of history
-      hist[j%10][i]=NULL;
-    }
-
-    i=0;
-    
-    while (args[i]!=NULL){
-      hist[j%10][i]=strdup(args[i]);			//save args to hist
-      i++;
-    }
-    hist[j][i]=NULL;					//end the hist row with NULL
-
-    printf("%d: ",j);
-
-    i=0;
-    while(hist[j%10][i]!=NULL){
-      printf("%s ", hist[j%10][i]);			//print hist 
-      i++;
-    }
-
-    j++;
-    printf("\n");
 
 
 // forking child process
 /**************************************************/
 
     if (skip==0){
-      pid=fork();					//forks a child process
-      //children[k]=pid;
+      pid=fork();					                          //forks a child process
 
-      if (pid<0) { 					//check forking
+      if (pid<0) { 					                        //check forking
         printf("forking error\n");	
         exit(1);
       }
-      else if (pid == 0) { 				//start of child process
-        //printf("child pid = %d\n", getpid());
+      else if (pid == 0) { 				                  //start of child process       
+	      //printf("child pid = %d\n", getpid());
         //printf("parent pid = %d\n", getppid());
-        if (execvp(*args, args)<0){ 			//check execution
-          printf("execution error\n");	
+        if (execvp(*args, args)<0){ 			          //check execution
+	        printf("execution error\n");	
           exit(1);
-        }				
+        }	
       }
-      else {						//start of parent process
+      else {						                            //start of parent process
         if (background == 0){
+          printf("waiting for child process # %d\n", pid);
+          addChild(pid);
           waitpid(pid);
-          printf("waiting for child to finish\n");
+          //printf("finished waiting for child process # %d\n", pid);
         } else {
-	  printf("parent is not waiting\n");
-	}			
-        printf("parent process continuing\n");
+	        printf("parent NOT waiting\n");
+	      }	
+        printf("resuming parent process\n");
       }
     }
+
+
+/**************************************************/
 
   }							//close while and end
 }
