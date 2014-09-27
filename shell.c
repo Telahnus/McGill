@@ -89,19 +89,24 @@ int main (void)
   char *args[MAX_LINE + 1]; 	// command line (of 80) has max of 40 arguments
   pid_t pid; 			// child id
   char *hist[10][MAX_LINE];	// history buffer
-  int i, j;			// loop iterators
+  int i, j, k, l;		// loop iterators
   int skip;			// used to track a shell command run by parent and skip child
-
-  i=j=skip=0;
+  char* cwd;			// will hold pwd
+  char buff[80];		// buffer for pwd
+  //int children[10];		// holds pid of children
+  
+  i=j=k=l=skip=0;
 
   while (1){
     background = skip = 0;
     printf("COMMAND->\n");
-    setup(inputBuffer, args, &background); // get next command
+    setup(inputBuffer, args, &background); 		// get next command
     
-    /* my code goes here */
+// built in commands
+/**************************************************/
 
-    if (strcmp(inputBuffer,"cd")==0){	//change directory is handled in shell
+// built in change directory
+    if (strcmp(inputBuffer,"cd")==0){
       skip=1;
       printf ("changing directory to %s\n", args[1]);  
       if (chdir (args[1]) == -1) {  
@@ -110,64 +115,106 @@ int main (void)
         printf ("chdir successful\n");    
       }  
     }
-    
+
+//built in print working directory
+    if (strcmp(inputBuffer,"pwd")==0){
+      skip=1;
+      cwd = getcwd(buff,80);
+      if (cwd!=NULL){
+        printf ("current working directory is %s\n",cwd);  
+      }
+    }
+
+//built in exit command
     if (strcmp(inputBuffer,"exit")==0){
       printf("exiting shell\n");
       exit(0); 
     }
 
 
+// fg and jobs
+/**************************************************/
+/*    
+    if (strcmp(inputBuffer,"jobs")==0){
+      printf("listing background processes\n");
+      for (i=0;i<10;i++){
+        
+      } 
+    }
+*/
 
+// history function
+/**************************************************/
+    
+    if (strcmp(inputBuffer,"history")==0){		//history command is input
+      printf("listing last 10 commands\n");
+      for (k=1;k<10;k++){
+	l=j-k;
+	if (l>=0){
+	  printf("%d: ", l);
+	  i=0;
+	  while(hist[l%10][i]!=NULL){
+            printf("%s ", hist[l%10][i]);		//print hist 
+            i++;
+          }
+	  printf("\n");
+	}
+      } 
+    }
 
-//history function
-/************************************
+    for (i=0; i<20; i++){				//clear out row of history
+      hist[j%10][i]=NULL;
+    }
+
     i=0;
-    free(hist[j%10][*]);
+    
     while (args[i]!=NULL){
-      hist[j%10][i]=strdup(args[i]);	//save args to hist
+      hist[j%10][i]=strdup(args[i]);			//save args to hist
       i++;
     }
-    hist[j][i]=NULL;
-    
-    printf("%d: ", j);
+    hist[j][i]=NULL;					//end the hist row with NULL
+
+    printf("%d: ",j);
 
     i=0;
     while(hist[j%10][i]!=NULL){
-      printf("%s ", hist[j%10][i]);	//print hist 
+      printf("%s ", hist[j%10][i]);			//print hist 
       i++;
     }
 
     j++;
     printf("\n");
-  
-*********************************************/
 
-//forking process
-/***********************************
-*/
+
+// forking child process
+/**************************************************/
+
     if (skip==0){
-      pid=fork();				//forks a child process
+      pid=fork();					//forks a child process
+      //children[k]=pid;
 
-      if (pid<0) { 				//check forking
+      if (pid<0) { 					//check forking
         printf("forking error\n");	
         exit(1);
       }
-      else if (pid == 0) { 			//start of child process
-        printf("child pid = %d\n", getpid());
-        printf("parent pid = %d\n", getppid());
-        if (execvp(*args, args)<0){ 		//check execution
+      else if (pid == 0) { 				//start of child process
+        //printf("child pid = %d\n", getpid());
+        //printf("parent pid = %d\n", getppid());
+        if (execvp(*args, args)<0){ 			//check execution
           printf("execution error\n");	
           exit(1);
         }				
       }
-      else {					//start of parent process
+      else {						//start of parent process
         if (background == 0){
           waitpid(pid);
           printf("waiting for child to finish\n");
-        }			
+        } else {
+	  printf("parent is not waiting\n");
+	}			
         printf("parent process continuing\n");
       }
     }
-/****************************/
-  }
+
+  }							//close while and end
 }
