@@ -2,10 +2,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
-
-int getcmd(char *prompt, char *args[], int *background)
-{
+int getcmd(char *prompt, char *args[], int *background){
     int length, i = 0;
     char *token, *loc;
     char *line;
@@ -33,23 +32,40 @@ int getcmd(char *prompt, char *args[], int *background)
             args[i++] = token;
     }
 
+    args[i++] = '\0';
     return i;
 }
 
+void freecmd (char *args[], int count){
+	for(int i=0; i<count; i++){
+		if(args[i] != NULL){
+			args[i] = NULL;
+		}
+	}
+}
 
-int main()
-{
+int main(){
     char *args[20];
     int bg;
-    int cnt = getcmd("\n>>  ", args, &bg);
 
-    for (int i = 0; i < cnt; i++)
-        printf("\nArg[%d] = %s", i, args[i]);
-
-    if (bg)
-        printf("\nBackground enabled..\n");
-    else
-        printf("\nBackground not enabled \n");
-
-    printf("\n\n");
+    while(1){
+    	bg = 0;
+		int cnt = getcmd("\n>> ", args, &bg);
+		
+		pid_t pid = fork();
+		if (pid < 0){
+			perror("fork failed");
+			exit(1);
+		}else if (pid == 0){ // child
+			execvp(args[0],args);
+			perror("error in execvp");
+			_exit(EXIT_FAILURE);
+		}else{ // parent
+			int status;
+			if(bg == 1){
+				waitpid(pid, &status, 0);
+			}
+			freecmd(args, cnt); // reset commands
+		}
+	}
 }
