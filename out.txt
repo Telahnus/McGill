@@ -1,0 +1,11 @@
+total 60
+-rwxrwxr-x 1 telahnus telahnus 12596 Feb 13 20:42 a.out
+-rw-rw-r-- 1 telahnus telahnus  3110 Feb  9 15:38 CircularBuffer.c
+-rw-rw-r-- 1 telahnus telahnus   249 Feb  9 15:38 hello.c
+-rw-rw-r-- 1 telahnus telahnus   354 Feb 13 07:56 node.c
+-rw-rw-r-- 1 telahnus telahnus  7836 Feb 13 20:42 oscode.c
+-rw-rw-r-- 1 telahnus telahnus    98 Feb 13 20:37 out.txt
+-rw-rw-r-- 1 telahnus telahnus   139 Feb  9 16:00 print.c
+-rw-rw-r-- 1 telahnus telahnus  2848 Feb  9 15:38 PrinterSpooler.c
+-rw-rw-r-- 1 telahnus telahnus    38 Feb  9 15:38 README.md
+-rw-rw-r-- 1 telahnus telahnus  6566 Feb  9 15:38 shell.c

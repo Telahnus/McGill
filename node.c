@@ -8,19 +8,13 @@ typedef struct node {
 } node_t;
 
 int main(){
-	char *name = "John";
-	char num[10];
-	strcpy(num, name);
-/*	node_t * head = NULL;
-	head = malloc(sizeof(node_t));
-	if (head == NULL) {
-	    return 1;
-	}
+	node_t * head = malloc(sizeof(node_t));
+	node_t * tail = malloc(sizeof(node_t));
 
 	head->val = 2;
-	head->next = NULL;*/
+	head->next = tail;
 /*	int aInt = 368;
 	char str[15];
 	snprintf(str, 15, "%d", aInt);*/
-	printf("%s\n", num);
+	//printf("%s\n", num);
 }
